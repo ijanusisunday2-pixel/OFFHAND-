@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Offhand</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: left-aligned hero beside a "hand-off list" that shows chores being marked as handled; plain rows below, one real 3-step sequence, one form. */
+:root {
+  --bg: #F1F4F2;
+  --surface: #FFFFFF;
+  --fg: #14201C;
+  --muted: #5A6A64;
+  --line: #D3DCD7;
+  --accent: #0B6B5C;
+  --accent-fg: #FFFFFF;
+  --mark: #F2D15C;
+  --font-display: "Familjen Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1613; --surface: #17211D; --fg: #E6EEEA; --muted: #98A9A2;
+    --line: #2A3832; --accent: #4FD1B5; --accent-fg: #0B1512; --mark: #C9A83A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1613; --surface: #17211D; --fg: #E6EEEA; --muted: #98A9A2;
+  --line: #2A3832; --accent: #4FD1B5; --accent-fg: #0B1512; --mark: #C9A83A;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+.wrap { max-width: 1080px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.08; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--accent); }
+.mono { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* top bar */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 20px; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; text-decoration: none; color: var(--fg); }
+.brand span { color: var(--accent); }
+.top a.jump { font-size: 14px; font-weight: 600; text-decoration: none; border-bottom: 2px solid var(--accent); padding-bottom: 1px; color: var(--fg); }
+
+/* hero */
+.hero { display: grid; grid-template-columns: 1fr; gap: 40px; padding-block: 40px 72px; align-items: start; }
+@media (min-width: 880px) { .hero { grid-template-columns: 1.1fr 0.9fr; gap: 56px; padding-block: 72px 96px; } }
+.hero > * { min-width: 0; }
+.hero h1 { font-size: clamp(38px, 7vw, 68px); font-weight: 700; }
+.hero h1 em { font-style: normal; background: linear-gradient(transparent 62%, var(--mark) 62% 92%, transparent 92%); }
+.lede { font-size: 18px; color: var(--muted); max-width: 52ch; margin-top: 22px; }
+
+/* waitlist form */
+.join { margin-top: 32px; max-width: 480px; display: grid; gap: 12px; }
+.join label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+.join input, .join textarea {
+  width: 100%; font: inherit; color: var(--fg); background: var(--surface);
+  border: 1.5px solid var(--line); border-radius: 6px; padding: 12px 14px;
+}
+.join textarea { min-height: 84px; resize: vertical; }
+.join input::placeholder, .join textarea::placeholder { color: var(--muted); opacity: 0.8; }
+.btn {
+  font: 600 16px var(--font-body); background: var(--accent); color: var(--accent-fg);
+  border: 0; border-radius: 6px; padding: 13px 22px; cursor: pointer; justify-self: start;
+}
+.btn:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: 0.6; cursor: default; }
+.status { font-size: 14px; min-height: 22px; }
+.status.ok { color: var(--accent); font-weight: 600; }
+.status.err { color: #B3261E; }
+:root[data-theme="dark"] .status.err { color: #FF8F86; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .status.err { color: #FF8F86; } }
+.admin-count { font-size: 13px; color: var(--muted); }
+
+/* hand-off list */
+.ledger { background: var(--surface); border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 20px 4px; }
+.ledger-head { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0 12px; border-bottom: 1.5px solid var(--line); }
+.row { display: grid; grid-template-columns: 1fr auto; gap: 4px 14px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: center; }
+.row:last-child { border-bottom: 0; }
+.row .task { font-weight: 500; }
+.row .task s { text-decoration-thickness: 2px; text-decoration-color: var(--accent); color: var(--muted); }
+.row .when { grid-column: 1; }
+.pill { grid-column: 2; grid-row: 1 / span 2; font: 500 11px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; border: 1.5px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+
+/* sections */
+section { padding-block: 64px; border-top: 1.5px solid var(--line); }
+.sec-head { display: grid; gap: 12px; margin-bottom: 36px; max-width: 640px; }
+.sec-head h2 { font-size: clamp(28px, 4.4vw, 40px); font-weight: 600; }
+.sec-head p { color: var(--muted); }
+.services { display: grid; grid-template-columns: 1fr; }
+.svc { display: grid; grid-template-columns: 1fr; gap: 6px 40px; padding-block: 22px; border-top: 1px solid var(--line); }
+.svc:first-child { border-top: 0; padding-top: 0; }
+@media (min-width: 720px) { .svc { grid-template-columns: 280px 1fr; } }
+.svc h3 { font-size: 21px; font-weight: 600; }
+.svc p { color: var(--muted); max-width: 60ch; }
+.steps { display: grid; grid-template-columns: 1fr; gap: 28px; padding: 0; margin: 0; list-style: none; counter-reset: s; }
+@media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); gap: 36px; } }
+.steps li { counter-increment: s; min-width: 0; }
+.steps li::before { content: "Step " counter(s); font: 500 12px var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 10px; }
+.steps h3 { font-size: 21px; font-weight: 600; margin-bottom: 8px; }
+.steps p { color: var(--muted); }
+.who { font-size: clamp(20px, 3vw, 26px); font-family: var(--font-display); font-weight: 500; max-width: 30em; line-height: 1.3; }
+.final { display: grid; gap: 18px; justify-items: start; }
+.final h2 { font-size: clamp(30px, 5vw, 48px); font-weight: 700; max-width: 14em; }
+footer { padding-block: 32px 40px; border-top: 1.5px solid var(--line); display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; font-size: 14px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .btn { transition: filter .15s; } }
+</style>
+
+<style>body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#top">Off<span>hand</span></a>
+    <a class="jump" href="#join">Join the waitlist</a>
+  </header>
+
+  <main id="top">
+    <div class="hero">
+      <div>
+        <p class="mono" style="margin-bottom:18px">AI automation for small teams</p>
+        <h1>The work you keep doing by hand, <em>handled.</em></h1>
+        <p class="lede">Offhand builds small, dependable automations for the repeat tasks that eat your week: replying to customers, chasing leads, sending invoices, writing reports. We set them up. You stop thinking about them.</p>
+
+        <div class="join" id="join">
+          <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSd6mVf_DvYmrl0yk07iA5Qm1QwvHF20F7bTZEuSsj9prdfsnA/viewform" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Join the waitlist</a>
+          <p class="admin-count">Opens a short form. All we ask for is your email.</p>
+        </div>
+      </div>
+
+      <aside class="ledger" aria-label="Example hand-off list">
+        <div class="ledger-head"><span class="mono">Example hand-off list</span><span class="mono">Who does it</span></div>
+        <div class="row"><span class="task"><s>Copy new orders from WhatsApp into a sheet</s></span><span class="mono when">Every order</span><span class="pill">Offhand</span></div>
+        <div class="row"><span class="task"><s>Follow up on quotes nobody answered</s></span><span class="mono when">Every 3 days</span><span class="pill">Offhand</span></div>
+        <div class="row"><span class="task"><s>Remind late payers, politely</s></span><span class="mono when">Every Friday</span><span class="pill">Offhand</span></div>
+        <div class="row"><span class="task"><s>Pull the weekly sales numbers into one summary</s></span><span class="mono when">Every Monday</span><span class="pill">Offhand</span></div>
+        <div class="row"><span class="task">Decide which clients to take on</span><span class="mono when">When it matters</span><span class="pill" style="border-color:var(--line);color:var(--muted)">You</span></div>
+      </aside>
+    </div>
+
+    <section>
+      <div class="sec-head">
+        <p class="mono">What we take off your plate</p>
+        <h2>Four chores most small businesses are still doing manually</h2>
+      </div>
+      <div class="services">
+        <div class="svc"><h3>Customer replies</h3><p>Answers to common questions on WhatsApp, email and your website, written from your own prices and policies. Anything unusual goes to a person.</p></div>
+        <div class="svc"><h3>Leads and follow-ups</h3><p>New enquiries land in one sheet, get a quick first reply, and are followed up until they answer or say no.</p></div>
+        <div class="svc"><h3>Invoices and reminders</h3><p>Invoices go out on time. Late payers get a polite nudge on a schedule you choose.</p></div>
+        <div class="svc"><h3>Weekly reports</h3><p>The numbers you check every week, pulled from your tools and sent to you as a short summary.</p></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="sec-head">
+        <p class="mono">How it works</p>
+        <h2>From a task you hate to a task that's gone</h2>
+      </div>
+      <ol class="steps">
+        <li><h3>Tell us the chore</h3><p>Describe the work you repeat. A short form or a quick call is enough.</p></li>
+        <li><h3>We build it</h3><p>We set it up with tools you already use. You watch it run on real examples before it goes live.</p></li>
+        <li><h3>You stay in control</h3><p>You get an off switch, a log of everything it did, and a fix when something changes.</p></li>
+      </ol>
+    </section>
+
+    <section>
+      <div class="sec-head"><p class="mono">Who it's for</p></div>
+      <p class="who">Solo operators, shops, agencies and small teams with more repeat work than time, and no one to hand it to.</p>
+    </section>
+
+    <section>
+      <div class="final">
+        <h2>We're taking a small first group of clients.</h2>
+        <p style="color:var(--muted);max-width:52ch">Join the waitlist to hear first when a spot opens. People on the list get a free review of one workflow.</p>
+        <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSd6mVf_DvYmrl0yk07iA5Qm1QwvHF20F7bTZEuSsj9prdfsnA/viewform" target="_blank" rel="noopener" style="text-decoration:none;display:inline-block">Join the waitlist</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Offhand</span>
+    <span>Automation for the work you repeat.</span>
+  </footer>
+</div>
+
+
+</body>
+</html>
